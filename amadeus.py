@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 from database import Database
 import amadeus_prompts
-from chainwhip import Amadeus
+from chaingang import Amadeus
 import yaml
 import argparse
 
