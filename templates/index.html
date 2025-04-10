@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Amadeus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+    <link rel="stylesheet" href="https://jenil.github.io/bulmaswatch/darkly/bulmaswatch.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='amadeus_ico.png') }}">
+    <style>
+        #chat-log {
+            height: 600px; /* Adjust this value according to your needs */
+            overflow-y: auto;
+            white-space: pre-line;
+        }
+
+        @media screen and (max-width: 768px) {
+            /* This is the breakpoint for most mobile devices */
+            #chat-log {
+                height: 400px;
+            }
+
+            #Amadeus {
+                display: none;
+            }
+        }
+
+        #Amadeus {
+            width: 100%;
+            height: auto;
+            padding-left: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+<div id="image-urls" data-first-image="{{ url_for('static', filename='CRS_JMD_40000600.png') }}"
+     data-second-image="{{ url_for('static', filename='CRS_JME_40000101.png') }}"></div>
+<div class="container">
+    <div class="columns">
+        <div class="column is-two-thirds">
+            <div class="box">
+                <div id="chat-log" class="content">
+                    {% for log in chatlog %}
+                    <p><strong>{{ log[1] }}:</strong> {{ log[2]|nl2br|safe }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <textarea id="user-input" class="textarea" rows="4" placeholder="Enter your message"></textarea>
+            <button id="send-button" class="button is-primary">Send</button>
+        </div>
+        <div class="column">
+            <img id="Amadeus" src="{{ url_for('static', filename='CRS_JMD_40000600.png') }}" alt="Amadeus">
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+        updateScroll();
+
+        $(document).ajaxStart(function () {
+            var secondImageUrl = $('#image-urls').data('second-image');
+            $('#Amadeus').attr('src', secondImageUrl);
+        });
+
+        $(document).ajaxStop(function () {
+            var firstImageUrl = $('#image-urls').data('first-image');
+            $('#Amadeus').attr('src', firstImageUrl);
+        });
+
+        function updateScroll() {
+            var element = document.getElementById("chat-log");
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // Function to send user input to the server and display the chatbot response
+        function showChatbotResponse() {
+            var userInput = $('#user-input').val().trim();
+            $('#user-input').val('');
+            if (userInput.toLowerCase() === 'exit' || userInput.toLowerCase() === 'quit' || userInput.toLowerCase() === 'bye') {
+                $('#chat-log').append('<p>Amadeus: Goodbye!</p>');
+                return;
+            }
+
+            //var formattedInput = userInput.replace(/\n/g, '<br>');
+            $('#chat-log').append('<p><strong>You: </strong>' + userInput + '</p>');
+
+            $.ajax({
+                url: '/get_response',
+                type: 'POST',
+                data: {input: userInput},
+
+                beforeSend: function () {
+                    $('#send-button').addClass('is-loading');
+                    updateScroll();
+                },
+
+                success: function (response) {
+                    //var formattedResponse = response.replace(/\n/g, '<br>');
+                    $('#chat-log').append('<p><strong>Amadeus: </strong>' + response + '</p>');
+                    updateScroll();
+                },
+
+                complete: function () {
+                    $('#send-button').removeClass('is-loading');
+                }
+            });
+        }
+
+// Event listener for the send button
+        $('#send-button').click(function () {
+            showChatbotResponse();
+        });
+
+// Event listener for the enter key
+        $('#user-input').keypress(function (event) {
+            if (event.which === 13 && !event.shiftKey) {
+                showChatbotResponse();
+                event.preventDefault(); // Prevents the default action
+            }
+        });
+    });
+
+</script>
+</body>
+</html>
